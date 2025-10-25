@@ -208,7 +208,7 @@ const errorMsg = ref('')
 const lastUrl = ref('')
 const result = ref<unknown | null>(null)
 
-const BASE_URL = '/api/wallet'
+const BASE_URL = 'https://suiport.mailberkayoztunc.workers.dev/wallet'
 
 async function fetchWallet(address: string) {
   const addr = address.trim()
