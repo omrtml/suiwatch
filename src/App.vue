@@ -1,16 +1,13 @@
 <template>
   <div class="min-h-screen bg-gray-900 text-white relative">
-    <!-- Landing: Big centered search -->
     <div v-if="mode === 'landing'" class="min-h-screen flex items-center justify-center">
       <div class="w-full max-w-6xl px-6">
         <div class="relative">
-          <!-- Left icon -->
           <div class="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
             <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
             </svg>
           </div>
-          <!-- Big input -->
           <input
             v-model="landingQuery"
             @keyup.enter="submitLanding"
@@ -18,7 +15,7 @@
             placeholder="Search for any Token, Wallet or Feature"
             class="w-full bg-gray-800 border border-gray-700 rounded-full pl-16 pr-24 py-6 text-2xl placeholder-gray-400 focus:outline-none focus:border-gray-600 transition-colors"
           />
-          <!-- Slash badge -->
+          
           <div class="absolute inset-y-0 right-0 pr-6 flex items-center pointer-events-none">
             <div class="bg-gray-700 rounded-md px-3 py-1.5">
               <span class="text-gray-300 text-xl font-medium">/</span>
@@ -31,13 +28,11 @@
     <div v-else class="pt-10">
       <div class="max-w-3xl mx-auto px-4">
         <div class="relative">
-          <!-- Left icon -->
           <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
             </svg>
           </div>
-          <!-- Small input -->
           <input
             ref="topInput"
             v-model="topQuery"
@@ -46,7 +41,7 @@
             placeholder="Search for any Token, Wallet or Feature"
             class="w-full bg-gray-800 border border-gray-700 rounded-full pl-12 pr-14 py-3 text-lg placeholder-gray-400 focus:outline-none focus:border-gray-600 transition-colors"
           />
-          <!-- Slash badge -->
+          
           <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
             <div class="bg-gray-700 rounded px-2 py-0.5">
               <span class="text-gray-300 text-sm font-medium">/</span>
@@ -55,38 +50,81 @@
         </div>
       </div>
 
-      <!-- Middle content placeholders -->
+      
       <div class="max-w-7xl mx-auto px-4 mt-10">
-        <!-- Top grid: left card + right card -->
+        
         <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          <!-- Left large card: Net Worth -->
+          
           <div class="lg:col-span-3 relative overflow-hidden rounded-3xl bg-gray-800/60 border border-gray-700/60 shadow-xl h-[420px]">
-            <!-- Gradient wash for depth -->
+            
             <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-transparent via-emerald-700/10 to-emerald-500/20"></div>
             
-            <!-- Content -->
+            
             <div class="relative h-full p-6 pr-56">
               <div class="flex items-center">
                 <h3 class="text-gray-200 text-xl font-semibold">Net Worth</h3>
               </div>
 
-              <!-- Big amount -->
+              
               <div class="mt-6">
-                <div class="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white">
-                  {{ formattedUSD }}
+                <div class="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white flex items-baseline gap-3">
+                  <span>{{ formattedUSD }}</span>
+                  <span v-if="netWorthSUI" class="text-2xl font-semibold text-gray-400">{{ netWorthSUI }} SUI</span>
                 </div>
+                  <div class="mt-2 flex items-center gap-3">
+                    <span :class="percentageChangeColor + ' text-3xl sm:text-4xl md:text-3xl font-bold'">
+                      {{ percentageChangeDisplay }}
+                    </span>
+                    <span class="text-gray-400 text-lg font-medium">Holdings PnL</span>
+                  </div>
+                  <div class="mt-4 flex-col">
+                    <!-- Token breakdown row -->
+                    <div class="flex items-end gap-5 mb-2 mt-12 flex-wrap">
+                      <template v-for="(t, idx) in topTokens" :key="t.coinType + '-' + idx">
+                        <div class="flex flex-col items-center w-12">
+                          <div class="h-9 w-9 rounded-full flex items-center justify-center mb-1 border-2" :style="{ borderColor: t.color }">
+                            <img v-if="t.iconUrl" :src="t.iconUrl" alt="" class="h-full w-full object-cover rounded-full" />
+                            <span v-else class="text-base font-bold" :style="{ color: t.color }">{{ t.symbolFirst }}</span>
+                          </div>
+                          <div class="text-white text-sm font-semibold">{{ t.symbol }}</div>
+                          <div class="text-gray-300 text-xs font-medium underline underline-offset-2">{{ t.percentDisplay }}</div>
+                        </div>
+                      </template>
+                      <div v-if="othersTokens.length" class="flex flex-col items-center w-16">
+                        <div class="h-9 w-9 rounded-full flex items-center justify-center mb-1 border-2" style="border-color:#D946EF;">
+                          <span class="text-xl font-bold text-purple-300">...</span>
+                        </div>
+                        <div class="text-purple-300 text-sm font-semibold">Others</div>
+                        <div class="text-gray-300 text-xs font-medium underline underline-offset-2">{{ othersPercentDisplay }}</div>
+                      </div>
+                    </div>
+                    <!-- Chart bar -->
+                    <div class="w-4/5 h-6 rounded-lg flex overflow-hidden mb-4" style="background:rgba(255,255,255,0.04);">
+                      <template v-for="(t, idx) in chartTokens" :key="t.coinType + '-' + idx">
+                        <div
+                          :style="{
+                            width: t.percentBar,
+                            background: t.color,
+                            transition: 'width 0.4s',
+                          }"
+                          class="h-full"
+                          :title="t.symbol + ' ' + t.percentDisplay"
+                        ></div>
+                      </template>
+                    </div>
+                    <div class="mt-2 text-gray-400 text-sm">{{ tokensCount }} tokens detected</div>
+                  </div>
               </div>
 
-              <!-- Stats grid -->
-              <!-- Reserved space for future metrics -->
+              
               <div class="mt-8"></div>
 
-              <!-- Error -->
+              
               <p v-if="errorMsg" class="mt-4 text-sm text-red-400">{{ errorMsg }}</p>
               <div v-if="loading" class="absolute inset-0 bg-gray-900/20 backdrop-blur-[1px]"></div>
             </div>
 
-            <!-- Mascot -->
+            
             <img
               src="/img/walrus.png"
               alt="Walrus mascot"
@@ -95,29 +133,28 @@
               decoding="async"
             />
           </div>
-          <!-- Right large card placeholder -->
+          
           <div class="lg:col-span-2 rounded-2xl bg-gray-800/50 border border-gray-700/60 shadow-xl h-[420px]"></div>
         </div>
 
-        <!-- Coins list (table style) -->
+        
         <div class="rounded-2xl bg-gray-800/50 border border-gray-700/60 shadow-xl mt-8">
           <div class="p-4 sm:p-6">
-            <!-- Card header -->
+            
             <div class="flex items-center justify-between">
               <h3 class="text-gray-200 text-base sm:text-lg font-semibold">Token Portfolio</h3>
               <div class="text-gray-400 text-orange-400 text-sm font-bold">Total tokens: {{ tokensCount }} </div>
             </div>
 
-            <!-- Table header -->
             <div class="mt-4 hidden md:flex items-center px-2 py-2 rounded-lg bg-gray-900/40 border border-gray-700/60 text-xs uppercase tracking-wide text-gray-400">
               <div class="w-10 text-center">#</div>
               <div class="flex-1 pl-2">Name</div>
               <div class="w-32 text-right">Price</div>
               <div class="w-44 text-right">Balance</div>
               <div class="w-36 text-right">USD Value</div>
+              <div class="w-36 text-right">Actions</div>
             </div>
 
-            <!-- Rows -->
             <div class="mt-1 max-h-[26rem] overflow-y-auto">
               <div
                 v-for="(t, idx) in pagedTokens"
@@ -137,11 +174,24 @@
                 </div>
                 <div class="w-32 text-right text-gray-200">{{ t.priceDisplay }}</div>
                 <div class="w-44 text-right text-white">{{ t.amountDisplay }} <span class="text-gray-400">{{ t.symbol }}</span></div>
-                <div class="w-36 text-right text-white">{{ t.valueUSDDisplay }}</div>
+                <div class="w-36 text-right text-white">
+                  <div class="flex items-center justify-end gap-2">
+                    <div>{{ t.valueUSDDisplay }}</div>
+                    <button
+                      @click.prevent="refreshPrice(t.coinType)"
+                      :disabled="isRefreshing(t.coinType)"
+                      class="ml-2 inline-flex items-center justify-center h-7 w-7 rounded-md bg-gray-700/60 hover:bg-gray-700"
+                      :title="isRefreshing(t.coinType) ? 'Refreshing...' : 'Refresh price'"
+                    >
+                      <span v-if="!isRefreshing(t.coinType)" class="text-base text-xl">⟳</span>
+                      <span v-else class="animate-pulse text-base text-xl">…</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <!-- Mobile list -->
+            
             <div class="md:hidden mt-3 divide-y divide-gray-700/60">
               <div v-for="(t, idx) in pagedTokens" :key="t.coinType + '-m-' + idx" class="py-3">
                 <div class="flex items-center gap-3">
@@ -162,7 +212,7 @@
               </div>
             </div>
 
-            <!-- Pagination controls -->
+            
             <div class="mt-4 flex items-center justify-between">
               <div class="text-gray-400 text-sm">
                 Page {{ currentPage }} of {{ totalPages }}
@@ -194,6 +244,76 @@
 </template>
 
 <script setup lang="ts">
+// Net worth in SUI
+const suiToken = computed(() => tokensSorted.value.find(t => t.symbol?.toUpperCase() === 'SUI'))
+const suiPrice = computed(() => {
+  const t = suiToken.value
+  return t && typeof t.priceDisplay === 'string' && t.priceDisplay.startsWith('$')
+    ? Number(t.priceDisplay.replace(/[^\d.]/g, ''))
+    : (typeof t?.valueUSD === 'number' && typeof t?.amount === 'number' && t.amount > 0 ? t.valueUSD / t.amount : null)
+})
+const netWorthSUI = computed(() => {
+  const usd = totalValueUSD.value
+  const price = suiPrice.value
+  if (!usd || !price || price === 0) return ''
+  return (usd / price).toLocaleString('en-US', { maximumFractionDigits: 2 })
+})
+// Top tokens breakdown logic
+const TOP_N = 5
+const topTokens = computed(() => {
+  return chartTokens.value.slice(0, TOP_N).map((t, idx) => {
+    const token = tokensSorted.value[idx]
+    return {
+      ...t,
+      iconUrl: token.iconUrl,
+      symbolFirst: (token.symbol || '?').slice(0, 1).toUpperCase(),
+    }
+  })
+})
+
+const othersTokens = computed(() => chartTokens.value.slice(TOP_N))
+const othersPercent = computed(() => othersTokens.value.reduce((sum, t) => sum + t.percent, 0))
+const othersPercentDisplay = computed(() => othersPercent.value.toLocaleString('en-US', { maximumFractionDigits: 2 }) + '%')
+// Chart color palette
+const chartColors = [
+  '#6EE7B7', '#A7F3D0', '#FDE68A', '#FCA5A5', '#C4B5FD', '#F9A8D4', '#FCD34D', '#93C5FD', '#F87171', '#FBBF24', '#34D399', '#818CF8', '#F472B6', '#F59E42', '#A3E635', '#F43F5E', '#F3F4F6'
+]
+
+const chartTokens = computed(() => {
+  const tokens = tokensSorted.value
+  const total = tokens.reduce((sum, t) => sum + (typeof t.valueUSD === 'number' ? t.valueUSD : 0), 0)
+  return tokens.map((t, idx) => {
+    const percent = total > 0 ? (t.valueUSD / total) * 100 : 0
+    return {
+      symbol: t.symbol,
+      coinType: t.coinType,
+      percent,
+      percentDisplay: percent.toLocaleString('en-US', { maximumFractionDigits: 2 }) + '%',
+      percentBar: percent > 0.5 ? percent + '%' : '0.5%', // minimum width for visibility
+      color: chartColors[idx % chartColors.length],
+    }
+  })
+})
+const percentageChangeRaw = computed(() => {
+  const r: any = result.value
+  const v = r?.data?.percentageChange
+  return typeof v === 'number' ? v : null
+})
+
+const percentageChangeDisplay = computed(() => {
+  const v = percentageChangeRaw.value
+  if (v == null) return '—'
+  const sign = v > 0 ? '+' : ''
+  // Show 2 decimals, use comma for thousands
+  return `${sign}${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}%`
+})
+
+const percentageChangeColor = computed(() => {
+  const v = percentageChangeRaw.value
+  if (v == null) return ''
+  return v >= 0 ? 'text-green-400' : 'text-red-400'
+})
+
 import { ref, nextTick, computed, watch } from 'vue'
 
 type Mode = 'landing' | 'top'
@@ -206,6 +326,53 @@ const loading = ref(false)
 const errorMsg = ref('')
 const lastUrl = ref('')
 const result = ref<unknown | null>(null)
+
+const refreshing = ref<Record<string, boolean>>({})
+
+const PRICE_ENDPOINT = 'https://suiport.mailberkayoztunc.workers.dev/price'
+
+function isRefreshing(coinType: any) {
+  if (!coinType) return false
+  return !!refreshing.value[String(coinType)]
+}
+
+async function refreshPrice(coinType: any) {
+  if (!coinType) return
+  try {
+    refreshing.value[String(coinType)] = true
+    const url = `${PRICE_ENDPOINT}/${encodeURIComponent(String(coinType))}`
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const json = await res.json()
+
+    const data: any = (result.value as any)?.data
+    if (!data || !Array.isArray(data.tokens)) return
+    const idx = data.tokens.findIndex((x: any) => String(x?.coinType) === String(coinType))
+    if (idx === -1) return
+    const token = data.tokens[idx]
+
+    const pricePerToken = typeof json?.price === 'number' ? json.price : (typeof json?.priceUSD === 'number' ? json.priceUSD : undefined)
+    const valueUSDFromApi = typeof json?.valueUSD === 'number' ? json.valueUSD : undefined
+
+    const humanAmount = toHumanAmount(token?.balance, token?.metadata?.decimals)
+
+    if (typeof pricePerToken === 'number') {
+      const newVal = pricePerToken * (isFinite(humanAmount) ? humanAmount : 0)
+      data.tokens.splice(idx, 1, { ...token, valueUSD: newVal })
+    } else if (typeof valueUSDFromApi === 'number') {
+      data.tokens.splice(idx, 1, { ...token, valueUSD: valueUSDFromApi })
+    } else if (typeof json === 'number') {
+      const newVal = json * (isFinite(humanAmount) ? humanAmount : 0)
+      data.tokens.splice(idx, 1, { ...token, valueUSD: newVal })
+    }
+
+    result.value = { ...(result.value as any) }
+  } catch (err) {
+    console.error('refreshPrice error', err)
+  } finally {
+    refreshing.value[String(coinType)] = false
+  }
+}
 
 const BASE_URL = 'https://suiport.mailberkayoztunc.workers.dev/wallet'
 
@@ -262,13 +429,11 @@ function formatUSD(n: number | null | undefined) {
 
 const formattedUSD = computed(() => formatUSD(totalValueUSD.value))
 
-// -------- Tokens list helpers --------
 const tokensRaw = computed<any[]>(() => {
   const r: any = result.value
   return Array.isArray(r?.data?.tokens) ? r.data.tokens : []
 })
 
-// Merge duplicates strictly by coinType; if coinType is missing, keep entries separate
 const tokensMerged = computed<any[]>(() => {
   const map = new Map<string, any>()
   const others: any[] = []
@@ -288,7 +453,6 @@ const tokensMerged = computed<any[]>(() => {
         cur.valueUSD = (cur.valueUSD || 0) + val
       }
     } else {
-      // No coinType — don't merge to avoid accidental collisions
       others.push({ ...t, balanceBig: bal, valueUSD: val })
     }
   }
@@ -348,13 +512,11 @@ const tokensSorted = computed(() =>
 
 const tokensCount = computed(() => tokensSorted.value.length)
 
-// -------- Pagination (10 per page) --------
 const pageSize = 10
 const currentPage = ref(1)
 const totalPages = computed(() => Math.max(1, Math.ceil(tokensSorted.value.length / pageSize)))
 
 watch(tokensSorted, () => {
-  // Reset to first page when data changes
   currentPage.value = 1
 })
 
@@ -370,6 +532,5 @@ function prevPage() {
 function nextPage() {
   if (currentPage.value < totalPages.value) currentPage.value += 1
 }
-
 
 </script>
