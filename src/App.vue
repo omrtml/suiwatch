@@ -28,7 +28,6 @@
       </div>
     </div>
 
-    <!-- Top: Smaller search near the top -->
     <div v-else class="pt-10">
       <div class="max-w-3xl mx-auto px-4">
         <div class="relative">
