@@ -103,7 +103,7 @@
                     </div>
                     <!-- Chart bar -->
                     <div class="w-4/5 h-6 rounded-lg flex overflow-hidden mb-4" style="background:rgba(255,255,255,0.04);">
-                      <template v-for="(t, idx) in chartTokens" :key="t.coinType + '-' + idx">
+                      <template v-for="t in chartTokens" :key="t.coinType">
                         <div
                           :style="{
                             width: t.percentBar,
@@ -250,7 +250,7 @@
 import { ref, onMounted, watch, nextTick, computed } from 'vue'
 import { UniversalConnector } from '@reown/appkit-universal-connector'
 import { getUniversalConnector } from './walletConfig'
-
+import WalletButton from './components/WalletButton.vue'
 
 const universalConnector = ref<UniversalConnector>()
 const session = ref<any>()
@@ -263,7 +263,6 @@ onMounted(async () => {
 watch(() => universalConnector.value?.provider.session, (newSession) => {
   session.value = newSession
 })
-import WalletButton from './components/WalletButton.vue'
 // Net worth in SUI
 const suiToken = computed(() => tokensSorted.value.find(t => t.symbol?.toUpperCase() === 'SUI'))
 const suiPrice = computed(() => {
