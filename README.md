@@ -1,83 +1,87 @@
-# Portfolio Checker / SuiWatch
+<!-- prettier-ignore -->
+# Portfolio Checker — SuiWatch
 
-Portfolio Checker is a small, focused app for inspecting on-chain portfolios and checking eligibility for token distributions. The project bundles a user-facing interface, wallet integration, and a lightweight backend for lookup and helper APIs. A pool checker and airdrop checker are part of the core functionality.
+An elegant, focused dashboard to inspect Sui on-chain portfolios, analyze pool positions, and preview airdrop eligibility.
 
-This repository is intended as a practical tool for users to:
+Built for designers and devs who want fast glanceable insights plus the ability to deep-dive into wallet holdings.
 
-- Inspect balances and positions for an address
-- Check pool participation and summarized pool metrics
-- Verify airdrop eligibility via snapshot lookups or indexed rules
-- Connect a wallet to perform interactive flows (lookups, claims, or transactions)
+Highlights
+- Polished token portfolio view with balances, prices and USD value
+- Pool Checker: shows positions, TVL, pending fees and reward APRs
+- Airdrop Checker: snapshot-driven eligibility list with token amounts and expiration
+- Wallet connect integration for interactive flows
+- Small backend/API layer for lookups and snapshot hosting
 
----
+Quick demo (what you'll see)
+- Net worth summary, top token breakdown and a compact holdings chart
+- Token table with aligned columns: Price · Balance · USD value · actions
+- Pool rows with overlapping token icons, TVL, fees and APR breakdown
+- Airdrop list showing project, token, eligibility and expiration
 
-## Highlights
+Quick start
 
-- Address lookup and portfolio summary
-- Pool checker: view participation, share, and outcomes
-- Airdrop checker: fast snapshot lookups and an interface for claim guidance
-- Wallet-connect: connect an address and trigger wallet-driven actions
-- Small server component for API endpoints and snapshot hosting
+Requirements
+- Node.js (16+) and npm
 
----
-
-## Quick start
-
-Prerequisites:
-
-- Node.js and npm
-
-Install dependencies:
+Install & run
 
 ```bash
 npm install
-```
-
-Run the app in development:
-
-```bash
 npm run dev
 ```
 
-Start the backend server (if needed):
+Start the small server (optional)
 
 ```bash
 node server/index.js
 ```
 
-Build for production:
+Build for production
 
 ```bash
 npm run build
 ```
 
----
+Project layout
 
-## Layout (what's in the repo)
+- `src/` — Vue 3 frontend (components, composables, styles)
+- `server/` — tiny express-like endpoints and snapshot fixtures
+- `api/` — serverless routes used by the UI (proxy / helpers)
+- `img/`, `public/` — static assets and icons
 
-- `src/` — frontend source and components
-- `server/` — backend endpoints and snapshot files
-- `api/` — small edge/serverless endpoints used by the UI
-- `public/`, `img/`, `assets/` — static assets
+Airdrop & snapshots
 
----
+Drop JSON snapshot files into `server/snapshots/` (example format: array of addresses or eligibility objects). The UI uses `/api/airdrop-list` to load demo data — you can wire it to your own snapshot lookup route.
 
-## Adding snapshots
+What I already wired for you
+- Airdrop fetcher and UI (reads /api/airdrop-list) with expiration, token amounts and USD estimates
+- Pool positions fetch (mmt-positions) and a responsive grid layout
+- Token enrichment and price refresh helper
 
-To test or run airdrop checks locally, add JSON snapshot files under `server/snapshots/` and implement a simple lookup route that returns eligibility for an address.
+Developer notes
+- Uses Tailwind CSS for utilities and responsive layout
+- SFCs use `<script setup lang="ts">` (TypeScript-aware) — some components are imported with a `.default ||` fallback to avoid SFC default-export warnings in some TypeScript configs
+- Format helpers: `formatUSD`, `formatNumber`, `formatAprWithPercent` live in `src/App.vue` for now — feel free to extract to `src/utils` for reuse
 
-If you want, I can scaffold a small example snapshot and the corresponding server route.
+Ideas / next steps
+- Add a claim flow connected to a wallet (tx construction + signing)
+- Add snapshot management UI & scheduled snapshot import from external sources
+- Add unit tests for the airdrop mapping and pool parsing logic
 
----
+Contributing
 
-## Contributing & next steps
+1. Fork & create a feature branch
+2. Run `npm install` and `npm run dev`
+3. Open a PR with screenshots and a short description of the change
 
-- Create branches for features and open PRs with clear descriptions.
-- I can scaffold the airdrop-check endpoint and a simple `AirdropChecker` UI if you want to move to an MVP quickly.
+License
 
----
+This repo doesn't include a license file yet — add a `LICENSE` (MIT/Apache/Business) to clarify reuse terms.
 
-## License
+Need it prettier? I can:
+- add a hero screenshot and badges
+- generate multi-size favicons and a manifest
+- scaffold a `server/snapshots/example.json` and a test route
 
-No license file is included yet. Add a `LICENSE` to specify reuse terms.
+Happy to polish further — tell me which part you'd like spruced up (screenshots, badges, or a one-page README landing section).
 
