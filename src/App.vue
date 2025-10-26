@@ -83,7 +83,7 @@
                   <div class="mt-4 flex-col">
                     <!-- Token breakdown row -->
                     <div class="flex items-end gap-5 mb-2 mt-12 flex-wrap">
-                      <template v-for="(t, idx) in topTokens" :key="t.coinType + '-' + idx">
+                      <template v-for="t in topTokens" :key="t.coinType">
                         <div class="flex flex-col items-center w-12">
                           <div class="h-9 w-9 rounded-full flex items-center justify-center mb-1 border-2" :style="{ borderColor: t.color }">
                             <img v-if="t.iconUrl" :src="t.iconUrl" alt="" class="h-full w-full object-cover rounded-full" />
