@@ -46,10 +46,27 @@ const CF_API_TOKEN = "debXIsihVBoDISc5zz_PAN6bCpMTABDApyfpsoyU";
       body: JSON.stringify(body),
     });
 
-    const json = await r.json();
+    const json = await r.json().catch(() => null);
 
-    // Return Cloudflare's response directly
-    return res.status(r.status).json(json);
+    // If Cloudflare returns a non-2xx, surface a friendly error with details.
+    if (!r.ok) {
+      console.error('Cloudflare AI error:', r.status, json);
+      const message = json?.errors || json?.message || json || `Status ${r.status}`;
+      return res.status(502).json({ success: false, status: r.status, error: message, raw: json });
+    }
+
+    // Try to extract a useful text response from common Cloudflare shapes
+    let text = null;
+    try {
+      // newer Cloudflare shapes may include result -> output -> content
+      text = json?.result?.[0]?.content?.[0]?.text || json?.result?.[0]?.output?.[0]?.content?.[0]?.text;
+    } catch (e) {
+      // ignore
+    }
+    // fallback to other common fields
+    text = text || json?.text || json?.output?.[0]?.content?.[0]?.text || null;
+
+    return res.status(200).json({ success: true, text, raw: json });
   } catch (err) {
     console.error('api/ai error:', err);
     return res.status(500).json({ success: false, error: String(err) });
