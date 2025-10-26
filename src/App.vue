@@ -160,7 +160,12 @@
               loading="lazy" decoding="async" />
           </div>
 
-          <div class="lg:col-span-2 rounded-2xl bg-gray-800/50 border border-gray-700/60 shadow-xl h-[420px]"></div>
+          <div class="lg:col-span-2 relative rounded-2xl bg-gray-800/50 border border-gray-700/60 shadow-xl h-[420px] p-4">
+            <!-- Advice / actions panel -->
+            <!-- gradient overlay matching left card but opposite direction -->
+            <div class="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-bl from-transparent via-emerald-700/10 to-emerald-500/20"></div>
+            <AdviceButton :tokens="tokensSorted" :totalUsd="totalValueUSD" />
+          </div>
         </div>
 
         <div class="rounded-2xl bg-gray-800/50 border border-gray-700/60 shadow-xl mt-8">
@@ -288,7 +293,7 @@
                 Airdrop Checker
               </h3>
               <div class="text-gray-400 text-orange-400 text-sm font-bold">
-                Total tokens: {{ tokensCount }}
+                
               </div>
             </div>
 
@@ -305,6 +310,8 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, watch, nextTick, computed } from "vue";
+
 // SUI 24h change fetch logic
 const suiChangeRaw = ref<number | null>(null);
 const suiChangeDisplay = computed(() => {
@@ -352,10 +359,10 @@ onMounted(() => {
   fetchSuiMarketPrice();
   setInterval(fetchSuiMarketPrice, 60000); // refresh every 60s
 });
-import { ref, onMounted, watch, nextTick, computed } from "vue";
 import { UniversalConnector } from "@reown/appkit-universal-connector";
 import { getUniversalConnector } from "./walletConfig";
 import WalletButton from "./components/WalletButton.vue";
+import AdviceButton from "./components/AdviceButton.vue";
 
 const universalConnector = ref<UniversalConnector>();
 const session = ref<any>();
