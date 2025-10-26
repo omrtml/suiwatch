@@ -282,11 +282,11 @@ const netWorthSUI = computed(() => {
 const TOP_N = 5
 const topTokens = computed(() => {
   return chartTokens.value.slice(0, TOP_N).map((t, idx) => {
-    const token = tokensSorted.value[idx]
+    const token = tokensSorted.value[idx] || {}
     return {
       ...t,
-      iconUrl: token.iconUrl,
-      symbolFirst: (token.symbol || '?').slice(0, 1).toUpperCase(),
+      iconUrl: (token as any)?.iconUrl ?? '',
+      symbolFirst: ((token as any)?.symbol || '?').slice(0, 1).toUpperCase(),
     }
   })
 })
