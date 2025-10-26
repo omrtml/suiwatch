@@ -7,27 +7,29 @@
                                             class="fancy-btn relative overflow-hidden px-6 py-3 rounded-full text-white font-semibold shadow-2xl transform transition"
                                             type="button">
                                 <span class="absolute -left-6 -top-6 w-20 h-20 rounded-full bg-white/10 blur-lg animate-pulse"></span>
-                                <svg class="inline-block mr-2" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                                    <path d="M12 2l1.176 3.618L17 6.5l-3 2.182L14.352 12 12 10.118 9.648 12 10 8.682 7 6.5l3.824-.882L12 2z" fill="rgba(255,255,255,0.95)"/>
-                                </svg>
                                 <span class="inline-flex items-center gap-2">Get AI Advice</span>
                             </button>
             </div>
 
             <div v-if="active" class="">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-100">
-                            Portfolio AI Advice
-                        </h3>
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-100">
+                                Portfolio AI Advice
+                            </h3>
+                        </div>
+                        <div>
+                            <button
+                                @click="regenerate"
+                                :disabled="loading"
+                                class="fancy-btn small inline-flex items-center justify-center"
+                                :aria-disabled="loading"
+                                type="button"
+                            >
+                                <span>Regenerate</span>
+                            </button>
+                        </div>
                     </div>
-                    <div>
-                        <button @click="regenerate" :disabled="loading"
-                            class="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-700 text-white">
-                            Regenerate
-                        </button>
-                    </div>
-                </div>
 
                 <div class="rounded-lg p-6 flex-1 overflow-y-auto mt-3">
                     <h4 class="text-sm text-gray-300 mb-4">Advice</h4>
@@ -204,6 +206,20 @@ function regenerate() {
 
 .fancy-btn svg {
     filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2));
+}
+
+/* small variant for header buttons like Regenerate */
+.fancy-btn.small {
+    padding: 0.5rem 0.9rem;
+    font-size: 0.95rem;
+    border-radius: 0.75rem;
+}
+
+/* disabled state */
+.fancy-btn[disabled], .fancy-btn[aria-disabled="true"] {
+    opacity: 0.6;
+    transform: none !important;
+    pointer-events: none;
 }
 
 </style>
