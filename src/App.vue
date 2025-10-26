@@ -293,7 +293,7 @@
                   <div class="rounded-md overflow-hidden">
                     <div class="p-4 bg-gray-900/20 border-b border-gray-700/40">
                       <div class="grid grid-cols-4 gap-4 text-sm text-gray-400 items-center">
-                        <div>Pools</div>
+                        <div class="pl-14">Pools</div>
                         <div class="text-center">TVL</div>
                         <div class="text-center">Pending Fees</div>
                         <div class="text-center">APR</div>
