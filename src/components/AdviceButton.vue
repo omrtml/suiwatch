@@ -1,5 +1,5 @@
 <template>
-    <div class="h-full flex flex-col">
+    <div class="h-full flex flex-col overflow-hidden">
         <div class="mt-4 flex-1 flex flex-col gap-4">
             <!-- initial fancy button shown until activated: centered in the panel -->
             <div v-if="!active" class="flex-1 flex items-center justify-center">
@@ -31,8 +31,28 @@
 
                 <div class="rounded-lg p-6 flex-1 overflow-y-auto mt-3">
                     <h4 class="text-sm text-gray-300 mb-4">Advice</h4>
-                    <div class="text-sm text-gray-200 whitespace-pre-wrap">
-                        {{ advice }}
+
+                    <!-- Loading state: spinner + skeleton lines -->
+                    <div v-if="loading" class="flex flex-col gap-3 items-start">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-5 h-5 text-indigo-400 animate-spin" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.15" stroke-width="4"></circle>
+                                <path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+                            </svg>
+                            <div class="text-sm text-gray-300">Generating concise portfolio advice…</div>
+                        </div>
+
+                        <div class="w-full mt-2">
+                            <div class="h-3 bg-gray-700 rounded w-3/4 mb-2 animate-pulse"></div>
+                            <div class="h-3 bg-gray-700 rounded w-5/6 mb-2 animate-pulse"></div>
+                            <div class="h-3 bg-gray-700 rounded w-2/3 mb-2 animate-pulse"></div>
+                            <div class="h-3 bg-gray-700 rounded w-1/2 mb-2 animate-pulse"></div>
+                        </div>
+                    </div>
+
+                    <!-- Advice content -->
+                    <div v-else class="text-sm text-gray-200 whitespace-pre-wrap break-words">
+                        {{ advice || 'No advice available.' }}
                     </div>
                 </div>
             </div>
@@ -48,12 +68,13 @@ const props = defineProps<{ tokens?: any[]; totalUsd?: number | null; walletAddr
 
 const active = ref(false);
 const loading = ref(false);
-const advice = ref<string>(
-    `Summary: A balanced portfolio with heavy stablecoin exposure.\n\nTop actions (example):\n1) Consider reallocating 8-12% into SUI for growth potential.\n2) Consolidate tiny illiquid positions into top holdings.\n3) Maintain a 5% gas buffer in SUI.`
-);
+// Start empty and show a loader while fetching
+const advice = ref<string>("");
 
 async function fetchAdvice(prompt?: string, maxChars = 600, walletAddress?: string) {
     loading.value = true;
+    // clear previous advice while loading
+    advice.value = "";
     try {
         // Build a clear instruction prompt for portfolio-specific advice.
         const instruction = prompt || (walletAddress
