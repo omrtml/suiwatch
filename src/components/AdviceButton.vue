@@ -71,15 +71,38 @@ const loading = ref(false);
 // Start empty and show a loader while fetching
 const advice = ref<string>("");
 
+function formatUSD(n: number | null | undefined) {
+    if (typeof n !== "number" || !isFinite(n)) return "";
+    return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 2,
+    }).format(n);
+}
+
 async function fetchAdvice(prompt?: string, maxChars = 600, walletAddress?: string) {
     loading.value = true;
     // clear previous advice while loading
     advice.value = "";
+    // Build a compact portfolio summary from props.tokens and props.totalUsd to include in the prompt
+    const topTokens = (props.tokens || []).slice(0, 6).map((t: any) => {
+        const sym = t?.symbol || t?.coinType || "UNK";
+        const val = typeof t?.valueUSD === "number" ? formatUSD(t.valueUSD) : (t?.percentDisplay || "");
+        return `${sym}${val ? ` (${val})` : val}`;
+    });
+    const topSummary = topTokens.length ? `Top holdings: ${topTokens.join(', ')}.` : "";
+    const totalSummary = props.totalUsd ? `Total portfolio value: ${formatUSD(props.totalUsd)}.` : "";
     try {
         // Build a clear instruction prompt for portfolio-specific advice.
-        const instruction = prompt || (walletAddress
-            ? `You are a concise and practical crypto portfolio analyst. Analyze the portfolio for wallet ${walletAddress} and produce: (1) a 1-2 sentence summary of the portfolio composition, and (2) three prioritized, actionable recommendations. Return plain text only. Keep the entire response under ${maxChars} characters.`
-            : `You are a concise and practical crypto portfolio analyst. Analyze the provided portfolio data and produce: (1) a 1-2 sentence summary of the portfolio composition, and (2) three prioritized, actionable recommendations. Return plain text only. Keep the entire response under ${maxChars} characters.`);
+        // If prompt was supplied use it, otherwise build one with wallet and portfolio summary.
+        const baseInstruction = `You are a concise and practical crypto portfolio analyst. Produce: (1) a 1-2 sentence summary of the portfolio composition, and (2) three prioritized, actionable recommendations. Return plain text only, do not invent or assume holdings that are not provided below. Keep the entire response under ${maxChars} characters.`;
+        const dataContext = [
+            walletAddress ? `Wallet: ${walletAddress}.` : "",
+            totalSummary,
+            topSummary,
+        ].filter(Boolean).join(' ');
+
+        const instruction = prompt || `${dataContext}\n${baseInstruction}`;
 
         const res = await fetch('/api/ai', {
             method: 'POST',
