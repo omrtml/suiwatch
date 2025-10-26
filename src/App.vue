@@ -170,22 +170,23 @@
             </div>
 
             <div
-              class="mt-4 hidden md:flex items-center px-2 py-2 rounded-lg bg-gray-900/40 border border-gray-700/60 text-xs uppercase tracking-wide text-gray-400">
-              <div class="w-10 text-center">#</div>
-              <div class="flex-1 pl-2">Name</div>
-              <div class="w-32 text-right">Price</div>
-              <div class="w-44 text-right">Balance</div>
-              <div class="w-36 text-right">USD Value</div>
-              <div class="w-36 text-right">Actions</div>
+              class="mt-4 hidden md:grid px-2 py-2 rounded-lg bg-gray-900/40 border border-gray-700/60 text-xs uppercase tracking-wide text-gray-400 md:[grid-template-columns:40px_1fr_140px_180px_160px_72px]">
+              <div class="text-center">#</div>
+              <div class="pl-2">Name</div>
+              <div class="text-right">Price</div>
+              <div class="text-right">Balance</div>
+              <div class="text-right">USD Value</div>
+              <div class="text-right">Actions</div>
             </div>
 
             <div class="mt-1 max-h-[26rem] overflow-y-auto">
               <div v-for="(t, idx) in pagedTokens" :key="t.coinType + '-' + idx"
-                class="flex items-center px-2 py-3 border-b border-gray-800/60 last:border-0">
-                <div class="w-10 text-center text-gray-400">
+                class="grid items-center px-2 py-3 border-b border-gray-800/60 last:border-0 md:[grid-template-columns:40px_1fr_140px_180px_160px_72px]">
+                <div class="text-center text-gray-400">
                   {{ (currentPage - 1) * 10 + idx + 1 }}
                 </div>
-                <div class="flex-1 pl-2 min-w-0 flex items-center gap-3">
+                <div class="pl-2 min-w-0">
+                  <div class="flex items-center gap-3 min-w-0">
                   <div
                     class="h-9 w-9 rounded-full bg-gray-700/60 flex items-center justify-center overflow-hidden shrink-0">
                     <img v-if="t.iconUrl" :src="t.iconUrl" alt="" class="h-full w-full object-cover" />
@@ -193,33 +194,22 @@
                       t.symbolFirst
                       }}</span>
                   </div>
-                  <div class="min-w-0">
-                    <div class="text-white font-medium leading-tight truncate">
-                      {{ t.symbol }}
-                    </div>
-                    <div class="text-gray-400 text-[11px] leading-tight truncate">
-                      {{ t.name }}
+                    <div class="min-w-0">
+                      <div class="text-white font-medium leading-tight truncate">{{ t.symbol }}</div>
+                      <div class="text-gray-400 text-[11px] leading-tight truncate">{{ t.name }}</div>
                     </div>
                   </div>
                 </div>
-                <div class="w-32 text-right text-gray-200">
-                  {{ t.priceDisplay }}
-                </div>
-                <div class="w-44 text-right text-white">
-                  {{ t.amountDisplay }}
-                  <span class="text-gray-400">{{ t.symbol }}</span>
-                </div>
-                <div class="w-36 text-right text-white">
-                  <div class="flex items-center justify-end gap-2">
-                    <div>{{ t.valueUSDDisplay }}</div>
-                    <button @click.prevent="refreshPrice(t.coinType)" :disabled="isRefreshing(t.coinType)"
-                      class="ml-2 inline-flex items-center justify-center h-7 w-7 rounded-md bg-gray-700/60 hover:bg-gray-700"
-                      :title="isRefreshing(t.coinType)
-                          ? 'Refreshing...'
-                          : 'Refresh price'
-                        ">
-                      <span v-if="!isRefreshing(t.coinType)" class="text-base text-xl">⟳</span>
-                      <span v-else class="animate-pulse text-base text-xl">…</span>
+                <div class="text-right text-gray-200">{{ t.priceDisplay }}</div>
+                <div class="text-right text-white">{{ t.amountDisplay }} <span class="text-gray-400">{{ t.symbol }}</span></div>
+                <!-- USD Value column -->
+                <div class="text-right text-white">{{ t.valueUSDDisplay }}</div>
+                <!-- Actions column: only the refresh button, centered -->
+                <div class="text-right">
+                  <div class="flex items-center justify-end h-full">
+                    <button @click.prevent="refreshPrice(t.coinType)" :disabled="isRefreshing(t.coinType)" class="inline-flex items-center justify-center h-8 w-8 rounded-md bg-gray-700/60 hover:bg-gray-700" :title="isRefreshing(t.coinType) ? 'Refreshing...' : 'Refresh price'">
+                      <span v-if="!isRefreshing(t.coinType)" class="text-base">⟳</span>
+                      <span v-else class="animate-pulse text-base">…</span>
                     </button>
                   </div>
                 </div>
@@ -434,8 +424,12 @@ onMounted(() => {
 });
 import { UniversalConnector } from "@reown/appkit-universal-connector";
 import { getUniversalConnector } from "./walletConfig";
-import WalletButton from "./components/WalletButton.vue";
-import AdviceButton from "./components/AdviceButton.vue";
+import * as WalletButtonRaw from "./components/WalletButton.vue";
+import * as AdviceButtonRaw from "./components/AdviceButton.vue";
+
+// Some TypeScript setups flag SFCs as having no default export; normalize here
+const WalletButton = (WalletButtonRaw as any).default || (WalletButtonRaw as any);
+const AdviceButton = (AdviceButtonRaw as any).default || (AdviceButtonRaw as any);
 
 const universalConnector = ref<UniversalConnector>();
 const session = ref<any>();
