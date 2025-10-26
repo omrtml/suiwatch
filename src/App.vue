@@ -353,7 +353,7 @@
                     </div>
                   </div>
                 </template>
-                <div v-else class="text-sm text-gray-400">No pool positions found for this address.</div>
+                <div v-else class="text-sm text-gray-400">No pools found.</div>
               </div>
             </div>
           </div>
