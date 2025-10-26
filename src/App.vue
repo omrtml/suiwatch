@@ -1,5 +1,8 @@
 <template>
   <div class="min-h-screen bg-gray-900 text-white relative">
+    <div class="absolute top-6 right-8 z-50">
+      <WalletButton />
+    </div>
     <div v-if="mode === 'landing'" class="min-h-screen flex items-center justify-center">
       <div class="w-full max-w-6xl px-6">
         <div class="relative">
@@ -244,6 +247,23 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, watch, nextTick, computed } from 'vue'
+import { UniversalConnector } from '@reown/appkit-universal-connector'
+import { getUniversalConnector } from './walletConfig'
+
+
+const universalConnector = ref<UniversalConnector>()
+const session = ref<any>()
+
+onMounted(async () => {
+  universalConnector.value = await getUniversalConnector()
+  session.value = universalConnector.value.provider.session
+})
+
+watch(() => universalConnector.value?.provider.session, (newSession) => {
+  session.value = newSession
+})
+import WalletButton from './components/WalletButton.vue'
 // Net worth in SUI
 const suiToken = computed(() => tokensSorted.value.find(t => t.symbol?.toUpperCase() === 'SUI'))
 const suiPrice = computed(() => {
@@ -313,8 +333,6 @@ const percentageChangeColor = computed(() => {
   if (v == null) return ''
   return v >= 0 ? 'text-green-400' : 'text-red-400'
 })
-
-import { ref, nextTick, computed, watch } from 'vue'
 
 type Mode = 'landing' | 'top'
 const mode = ref<Mode>('landing')
