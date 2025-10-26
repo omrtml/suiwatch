@@ -297,11 +297,11 @@
                             <div class="relative w-10 h-10">
                               <!-- larger primary icon -->
                               <img v-if="pos.pool?.tokenX?.iconUrl" :src="pos.pool.tokenX.iconUrl" alt="" class="h-10 w-10 rounded-full z-10 border-2 border-white/10 shadow-sm" />
-                              <!-- smaller secondary icon: vertically centered and slightly offset left to overlap nicely -->
-                              <img v-if="pos.pool?.tokenY?.iconUrl" :src="pos.pool.tokenY.iconUrl" alt="" class="h-8 w-8 rounded-full absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-3 z-20 border-2 border-gray-800 bg-gray-900" />
+                              <!-- secondary icon: match primary size and overlap neatly -->
+                              <img v-if="pos.pool?.tokenY?.iconUrl" :src="pos.pool.tokenY.iconUrl" alt="" class="h-10 w-10 rounded-full absolute left-10 top-1/2 transform -translate-y-1/2 -translate-x-2 z-20 border-2 border-white/10 bg-gray-900" />
                             </div>
                             <div>
-                              <div class="text-white font-semibold uppercase">{{ pos.pool?.tokenX?.ticker }} / {{ pos.pool?.tokenY?.ticker }}</div>
+                              <div class="text-white ml-6 font-semibold uppercase">{{ pos.pool?.tokenX?.ticker }} / {{ pos.pool?.tokenY?.ticker }}</div>
                             </div>
                             <div class="ml-3">
                               <span v-if="pos.pool?.lpFeesPercent" class="px-2 py-1 bg-gray-900/60 text-xs rounded-full text-gray-200 border border-gray-700">{{ Number(pos.pool.lpFeesPercent).toFixed(3) }}%</span>
