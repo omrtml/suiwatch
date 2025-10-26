@@ -30,16 +30,6 @@
             placeholder="Search for any Token, Wallet or Feature"
             class="w-full bg-gray-800 border border-gray-700 rounded-full pl-16 pr-24 py-6 text-2xl placeholder-gray-400 focus:outline-none focus:border-gray-600 transition-colors" />
 
-          <div class="absolute inset-y-0 right-0 pr-6 flex items-center pointer-events-none">
-            <button
-              @click="submitLanding"
-              class="bg-gray-700 rounded-md px-3 py-1.5 focus:outline-none active:scale-95 transition-transform"
-              type="button"
-              aria-label="Refresh search"
-            >
-              <span class="text-gray-300 text-3xl font-bold">⟳</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -64,7 +54,7 @@
               type="button"
               aria-label="Refresh search"
             >
-              <span class="text-gray-300 text-2xl">⟳</span>
+              <span class="text-gray-300 text-3xl">⟳</span>
             </button>
           </div>
         </div>
@@ -287,6 +277,24 @@
         </div>
 
         <div class="rounded-2xl bg-gray-800/50 border border-gray-700/60 shadow-xl mt-8">
+          <div class="p-4 sm:p-6">
+            <div class="flex items-center justify-between">
+              <h3 class="text-gray-200 text-base sm:text-lg font-semibold">
+                Pool Checker
+              </h3>
+              <div class="text-gray-400 text-orange-400 text-sm font-bold">
+                
+              </div>
+            </div>
+
+            <div class="mt-4">
+              
+            </div>
+         
+          </div>
+        </div>
+
+         <div class="rounded-2xl bg-gray-800/50 border border-gray-700/60 shadow-xl mb-8 mt-8">
           <div class="p-4 sm:p-6">
             <div class="flex items-center justify-between">
               <h3 class="text-gray-200 text-base sm:text-lg font-semibold">
