@@ -282,15 +282,80 @@
               <h3 class="text-gray-200 text-base sm:text-lg font-semibold">
                 Pool Checker
               </h3>
-              <div class="text-gray-400 text-orange-400 text-sm font-bold">
-                
-              </div>
+              <div class="text-gray-400 text-orange-400 text-sm font-bold"></div>
             </div>
 
             <div class="mt-4">
-              
+              <div v-if="poolLoading" class="text-sm text-gray-400">Loading pool positions…</div>
+              <div v-else-if="poolError" class="text-sm text-red-400">{{ poolError }}</div>
+              <div v-else>
+                <template v-if="poolPositions.length">
+                  <div class="rounded-md overflow-hidden">
+                    <div class="p-4 bg-gray-900/20 border-b border-gray-700/40">
+                      <div class="grid grid-cols-4 gap-4 text-sm text-gray-400 items-center">
+                        <div>Pools</div>
+                        <div class="text-center">TVL</div>
+                        <div class="text-center">Pending Fees</div>
+                        <div class="text-center">APR</div>
+                      </div>
+                    </div>
+
+                    <div class="p-4 space-y-4">
+                      <div v-for="pos in poolPositions" :key="pos.objectId" class="p-4 rounded-lg bg-gray-900/30 border border-gray-700/50">
+                        <div class="grid grid-cols-4 gap-4 items-center">
+                          <div class="flex items-center gap-3">
+                            <div class="relative w-10 h-10">
+                              <!-- larger primary icon -->
+                              <img v-if="pos.pool?.tokenX?.iconUrl" :src="pos.pool.tokenX.iconUrl" alt="" class="h-10 w-10 rounded-full z-10 border-2 border-white/10 shadow-sm" />
+                              <!-- smaller secondary icon: vertically centered and slightly offset left to overlap nicely -->
+                              <img v-if="pos.pool?.tokenY?.iconUrl" :src="pos.pool.tokenY.iconUrl" alt="" class="h-8 w-8 rounded-full absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-3 z-20 border-2 border-gray-800 bg-gray-900" />
+                            </div>
+                            <div>
+                              <div class="text-white font-semibold uppercase">{{ pos.pool?.tokenX?.ticker }} / {{ pos.pool?.tokenY?.ticker }}</div>
+                            </div>
+                            <div class="ml-3">
+                              <span v-if="pos.pool?.lpFeesPercent" class="px-2 py-1 bg-gray-900/60 text-xs rounded-full text-gray-200 border border-gray-700">{{ Number(pos.pool.lpFeesPercent).toFixed(3) }}%</span>
+                            </div>
+                          </div>
+
+                          <div class="text-center">
+                            <div class="text-gray-400 text-sm">&nbsp;</div>
+                            <div class="text-white text-lg font-semibold">{{ pos.pool?.tvl ? formatUSD(Number(pos.pool.tvl)) : (pos.liquidity || '—') }}</div>
+                          </div>
+
+                          <div class="text-center">
+                            <div class="text-gray-400 text-sm">&nbsp;</div>
+                            <div class="text-white text-lg font-semibold">{{ pos.feesEarned?.valueUSD ? formatUSD(pos.feesEarned.valueUSD) : '—' }}</div>
+                          </div>
+
+                          <div class="text-center">
+                            <div class="text-white text-lg font-semibold">{{ formatAprWithPercent(pos.pool?.apy ?? pos.pool?.aprBreakdown?.total) }}</div>
+                            <div class="text-gray-400 text-sm mt-1">APR</div>
+                            <div class="mt-2">
+                              <template v-if="pos.pool?.aprBreakdown?.rewards && pos.pool.aprBreakdown.rewards.length">
+                                <div v-for="r in pos.pool.aprBreakdown.rewards" :key="r.coinType" class="text-white text-sm">
+                                  <span class="text-gray-400 text-xs mr-2">{{ rewardTicker(r.coinType, pos) }}</span>
+                                  <span class="font-medium">{{ formatAprWithPercent(r.apr) }} · {{ formatNumber(r.amountPerDay) }}/day</span>
+                                </div>
+                              </template>
+                              <template v-else-if="pos.pool?.rewarders && pos.pool.rewarders.length">
+                                <div v-for="(r, idx) in pos.pool.rewarders" :key="idx" class="text-white text-sm">
+                                  <span class="text-gray-400 text-xs mr-2">{{ rewardTicker(r.coin_type, pos) }}</span>
+                                  <span class="font-medium">{{ r.hasEnded ? 'ended' : 'active' }}</span>
+                                </div>
+                              </template>
+                            </div>
+                          </div>
+
+                          
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                <div v-else class="text-sm text-gray-400">No pool positions found for this address.</div>
+              </div>
             </div>
-         
           </div>
         </div>
 
@@ -565,6 +630,8 @@ async function fetchWallet(address: string) {
   const addr = address.trim();
   if (!addr) return;
   if (loading.value) return;
+  // start pool positions fetch concurrently
+  fetchPoolPositions(addr);
   const url = `${BASE_URL}/${encodeURIComponent(addr)}`;
   loading.value = true;
   errorMsg.value = "";
@@ -579,6 +646,50 @@ async function fetchWallet(address: string) {
     result.value = null;
   } finally {
     loading.value = false;
+  }
+}
+
+// Pool checker integration
+const POOL_BASE = "https://suiport.mailberkayoztunc.workers.dev/api/wallet";
+const poolLoading = ref(false);
+const poolError = ref<string | null>(null);
+const poolResult = ref<any | null>(null);
+const poolPositions = computed<any[]>(() => {
+  return Array.isArray(poolResult.value?.data?.positions)
+    ? poolResult.value.data.positions
+    : [];
+});
+
+function shortId(id: any) {
+  try {
+    const s = String(id || "");
+    if (s.length <= 16) return s;
+    return s.slice(0, 8) + "…" + s.slice(-6);
+  } catch {
+    return String(id);
+  }
+}
+
+async function fetchPoolPositions(address: string) {
+  const addr = String(address || "").trim();
+  if (!addr) {
+    poolResult.value = null;
+    poolError.value = null;
+    return;
+  }
+  poolLoading.value = true;
+  poolError.value = null;
+  try {
+    const url = `${POOL_BASE}/${encodeURIComponent(addr)}/mmt-positions`;
+    const res = await fetch(url, { method: "GET" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    poolResult.value = json;
+  } catch (err: any) {
+    poolError.value = err?.message ?? "Pool request failed";
+    poolResult.value = null;
+  } finally {
+    poolLoading.value = false;
   }
 }
 
@@ -610,6 +721,43 @@ function formatUSD(n: number | null | undefined) {
     currency: "USD",
     maximumFractionDigits: 2,
   }).format(n);
+}
+
+function formatNumber(n: any) {
+  const num = typeof n === 'number' ? n : Number(n);
+  if (!isFinite(num)) return String(n ?? '—');
+  if (Math.abs(num) >= 1000) {
+    return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 }).format(num);
+  }
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(num);
+}
+
+// Format APR values to two decimals and use comma as decimal separator, include percent sign
+function formatAprWithPercent(v: any) {
+  if (v === null || v === undefined) return '—';
+  const asNum = typeof v === 'number' ? v : Number(String(v).replace(',', '.'));
+  if (!isFinite(asNum)) return '—';
+  // fixed two decimals, replace decimal point with comma
+  const s = Number(asNum).toFixed(2).replace('.', ',');
+  return s + '%';
+}
+
+function rewardTicker(coinType: any, pos: any) {
+  try {
+    const ct = String(coinType || '');
+    // try to match tokenX/tokenY coinType
+    const tx = pos?.pool?.tokenX?.coinType;
+    const ty = pos?.pool?.tokenY?.coinType;
+    if (tx && String(tx) === ct) return pos.pool.tokenX.ticker || shortId(ct);
+    if (ty && String(ty) === ct) return pos.pool.tokenY.ticker || shortId(ct);
+    // fallback: use last segment after :: and remove module prefix if present
+    const parts = ct.split('::');
+    const last = parts[parts.length - 1] || ct;
+    // sometimes coin type has `x_sui::X_SUI` or `usdc::USDC` — prefer uppercase token
+    return last.toUpperCase();
+  } catch {
+    return String(coinType || '');
+  }
 }
 
 const formattedUSD = computed(() => formatUSD(totalValueUSD.value));
