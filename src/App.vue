@@ -285,7 +285,7 @@
                       <div class="grid grid-cols-4 gap-4 text-sm text-gray-400 items-center">
                         <div class="pl-14">Pools</div>
                         <div class="text-center">TVL</div>
-                        <div class="text-center">Pending Fees</div>
+                        <div class="text-center">Total USD Value</div>
                         <div class="text-center">APR</div>
                       </div>
                     </div>
@@ -315,7 +315,7 @@
 
                           <div class="text-center">
                             <div class="text-gray-400 text-sm">&nbsp;</div>
-                            <div class="text-white text-lg font-semibold">{{ pos.feesEarned?.valueUSD ? formatUSD(pos.feesEarned.valueUSD) : '—' }}</div>
+                            <div class="text-white text-lg font-semibold">{{ (pos.valueUSD ?? pos.feesEarned?.valueUSD) ? formatUSD(pos.valueUSD ?? pos.feesEarned?.valueUSD) : '—' }}</div>
                           </div>
 
                           <div class="text-center">
