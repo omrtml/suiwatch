@@ -164,7 +164,7 @@
             <!-- Advice / actions panel -->
             <!-- gradient overlay matching left card but opposite direction -->
             <div class="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-bl from-transparent via-emerald-700/10 to-emerald-500/20"></div>
-            <AdviceButton :tokens="tokensSorted" :totalUsd="totalValueUSD" />
+            <AdviceButton :tokens="tokensSorted" :totalUsd="totalValueUSD" :walletAddress="topQuery" />
           </div>
         </div>
 

@@ -43,19 +43,26 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+const props = defineProps<{ tokens?: any[]; totalUsd?: number; walletAddress?: string }>();
+
 const active = ref(false);
 const loading = ref(false);
 const advice = ref<string>(
     `Summary: A balanced portfolio with heavy stablecoin exposure.\n\nTop actions (example):\n1) Consider reallocating 8-12% into SUI for growth potential.\n2) Consolidate tiny illiquid positions into top holdings.\n3) Maintain a 5% gas buffer in SUI.`
 );
 
-async function fetchAdvice(prompt?: string) {
+async function fetchAdvice(prompt?: string, maxChars = 600, walletAddress?: string) {
     loading.value = true;
     try {
+        // Build a clear instruction prompt for portfolio-specific advice.
+        const instruction = prompt || (walletAddress
+            ? `You are a concise and practical crypto portfolio analyst. Analyze the portfolio for wallet ${walletAddress} and produce: (1) a 1-2 sentence summary of the portfolio composition, and (2) three prioritized, actionable recommendations. Return plain text only. Keep the entire response under ${maxChars} characters.`
+            : `You are a concise and practical crypto portfolio analyst. Analyze the provided portfolio data and produce: (1) a 1-2 sentence summary of the portfolio composition, and (2) three prioritized, actionable recommendations. Return plain text only. Keep the entire response under ${maxChars} characters.`);
+
         const res = await fetch('/api/ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt }),
+            body: JSON.stringify({ prompt: instruction }),
         });
 
         if (!res.ok) {
@@ -64,13 +71,15 @@ async function fetchAdvice(prompt?: string) {
             return;
         }
 
-    const json = await res.json();
-    // Support multiple possible response shapes (Cloudflare, OpenAI, generic)
-    const cfText = json?.text;
-    const openaiText = json?.choices?.[0]?.message?.content || json?.choices?.[0]?.text;
-    const cfResultText = json?.result?.[0]?.content?.[0]?.text || json?.output?.[0]?.content?.[0]?.text || json?.output?.[0]?.content?.text;
+        const json = await res.json();
 
-    advice.value = cfText || openaiText || cfResultText || JSON.stringify(json, null, 2) || 'No response from AI.';
+        // Prefer normalized `text` if backend sent it
+        let extracted = json?.text || json?.result?.response || json?.raw?.result?.response;
+        // fallback to common OpenAI/Cloudflare nested shapes
+        extracted = extracted || json?.choices?.[0]?.message?.content || json?.choices?.[0]?.text;
+        extracted = extracted || json?.result?.[0]?.content?.[0]?.text || json?.result?.[0]?.output?.[0]?.content?.[0]?.text;
+        // final fallback: pretty-print the raw JSON (useful for debugging)
+        advice.value = extracted || JSON.stringify(json, null, 2) || 'No response from AI.';
     } catch (err) {
         advice.value = `Network error: ${String(err)}`;
     } finally {
@@ -80,13 +89,13 @@ async function fetchAdvice(prompt?: string) {
 
 function activate() {
     active.value = true;
-    // Immediately request AI advice when opened
-    void fetchAdvice();
+    // Immediately request AI advice when opened; include wallet address if provided
+    void fetchAdvice(undefined, 600, props.walletAddress);
 }
 
 function regenerate() {
-    // regenerate uses same prompt; you can extend to pass context
-    void fetchAdvice();
+    // regenerate uses same prompt; include wallet address when available
+    void fetchAdvice(undefined, 600, props.walletAddress);
 }
 </script>
 
