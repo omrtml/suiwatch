@@ -43,7 +43,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-const props = defineProps<{ tokens?: any[]; totalUsd?: number; walletAddress?: string }>();
+// Accept null for totalUsd to match computed<number | null> passed from App.vue
+const props = defineProps<{ tokens?: any[]; totalUsd?: number | null; walletAddress?: string }>();
 
 const active = ref(false);
 const loading = ref(false);
