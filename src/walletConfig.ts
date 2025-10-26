@@ -35,7 +35,7 @@ export async function getUniversalConnector() {
     metadata: {
       name: 'Universal Connector',
       description: 'Universal Connector',
-      url: 'https://appkit.reown.com',
+      url: 'https://suiwatch.vercel.app',
       icons: ['https://appkit.reown.com/icon.png']
     },
     networks: [
