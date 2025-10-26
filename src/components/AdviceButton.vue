@@ -64,8 +64,13 @@ async function fetchAdvice(prompt?: string) {
             return;
         }
 
-        const json = await res.json();
-        advice.value = json?.text || 'No response from AI.';
+    const json = await res.json();
+    // Support multiple possible response shapes (Cloudflare, OpenAI, generic)
+    const cfText = json?.text;
+    const openaiText = json?.choices?.[0]?.message?.content || json?.choices?.[0]?.text;
+    const cfResultText = json?.result?.[0]?.content?.[0]?.text || json?.output?.[0]?.content?.[0]?.text || json?.output?.[0]?.content?.text;
+
+    advice.value = cfText || openaiText || cfResultText || JSON.stringify(json, null, 2) || 'No response from AI.';
     } catch (err) {
         advice.value = `Network error: ${String(err)}`;
     } finally {

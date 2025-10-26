@@ -7,10 +7,15 @@ const http = require('http');
 const { URL } = require('url');
 
 const PORT = process.env.PORT || 5174;
-const OPENAI_KEY = process.env.OPENAI_KEY;
+// Load Cloudflare AI configuration from environment variables with local placeholders.
+// For local testing you can set these in your shell or a local .env file.
+// WARNING: Do NOT commit real secret tokens to source control.
+const CF_ACCOUNT_ID = "568525424c1d0ac88c8baa71f52d3e45";
+const CF_MODEL = "@cf/meta/llama-3-8b-instruct";
+const CF_API_TOKEN = "debXIsihVBoDISc5zz_PAN6bCpMTABDApyfpsoyU";
 
-if (!OPENAI_KEY) {
-  console.warn('Warning: OPENAI_KEY env var is not set. Requests will fail with 401.');
+if (!CF_ACCOUNT_ID || !CF_MODEL || !CF_API_TOKEN || CF_ACCOUNT_ID.startsWith('REPLACE')) {
+  console.warn('Warning: Cloudflare AI env vars (CF_ACCOUNT_ID, CF_MODEL, CF_API_TOKEN) are not set or contain placeholders. Requests will fail.');
 }
 
 function readJsonBody(req) {
@@ -24,21 +29,20 @@ function readJsonBody(req) {
   });
 }
 
-async function proxyOpenAI(payload) {
-  // Forward to OpenAI Chat Completions endpoint
-  const url = 'https://api.openai.com/v1/chat/completions';
+async function proxyCloudflare(bodyPayload) {
+  const url = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/ai/run/${CF_MODEL}`;
 
   const resp = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${OPENAI_KEY}`,
+      Authorization: `Bearer ${CF_API_TOKEN}`,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(bodyPayload),
   });
 
   const json = await resp.json();
-  return json;
+  return { status: resp.status, json };
 }
 
 const server = http.createServer(async (req, res) => {
@@ -59,26 +63,21 @@ const server = http.createServer(async (req, res) => {
     try {
       const body = await readJsonBody(req);
 
-      // Accept a simple shape from the client and create a Chat request.
-      const prompt = body.prompt || 'Give short actionable portfolio advice for a crypto investor.';
-      const model = body.model || 'gpt-4o-mini';
-      const max_tokens = body.max_tokens || 400;
+      // Accept a simple shape from the client and create a Cloudflare AI request.
+      const prompt = body.prompt || 'Write a short story about a llama that goes on a journey to find an orange cloud';
 
       const payload = {
-        model,
-        messages: [ { role: 'user', content: prompt } ],
-        max_tokens,
-        temperature: body.temperature ?? 0.6,
+        messages: [
+          { role: 'system', content: 'You are a friendly assistant that helps write stories' },
+          { role: 'user', content: prompt },
+        ],
       };
 
-      const openaiResp = await proxyOpenAI(payload);
-
-      // Try to extract assistant text
-      const text = openaiResp?.choices?.[0]?.message?.content || openaiResp?.choices?.[0]?.text || null;
+      const cfResp = await proxyCloudflare(payload);
 
       res.setHeader('Content-Type', 'application/json');
-      res.writeHead(200);
-      res.end(JSON.stringify({ success: true, text, raw: openaiResp }));
+      res.writeHead(cfResp.status);
+      res.end(JSON.stringify(cfResp.json));
     } catch (err) {
       console.error('Error in /api/ai:', err);
       res.writeHead(500, { 'Content-Type': 'application/json' });
