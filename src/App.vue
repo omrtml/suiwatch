@@ -361,7 +361,77 @@
             </div>
 
             <div class="mt-4">
-              
+              <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-400">Airdrops detected for demo data</div>
+                <div class="text-gray-400 text-sm">{{ airdrops.length }} airdrops - {{ formatUSDComma(totalAirdropsUSD) }}</div>
+              </div>
+
+              <div class="mt-4">
+                <div v-if="airdropLoading" class="text-sm text-gray-400">Loading airdrops…</div>
+                <div v-else-if="airdropError" class="text-sm text-red-400">{{ airdropError }}</div>
+                <div v-else>
+                  <div class="mt-4 hidden md:grid px-2 py-3 rounded-lg bg-gray-900/40 border border-gray-700/60 text-xs uppercase tracking-wide text-gray-400 md:[grid-template-columns:120px_1fr_220px_140px_160px]">
+                    <div class="pl-2">Date</div>
+                    <div class="pl-12">Airdrop</div>
+                    <div>Asset</div>
+                    <div class="text-center">Status</div>
+                    <div class="text-right">Amount</div>
+                  </div>
+
+                  <div class="mt-1 max-h-[28rem] overflow-y-auto">
+                    <div v-for="(a, idx) in airdrops" :key="a.id || idx" class="grid items-center px-2 py-4 border-b border-gray-800/60 last:border-0 md:[grid-template-columns:120px_1fr_220px_140px_160px]">
+                      <div class="pl-2 text-gray-300 text-sm">
+                        <div v-if="a.date" class="text-white font-semibold text-sm">{{ formatAirdropDate(a.date) }}</div>
+                        <div v-if="a.expirationDate" class="text-gray-400 text-xs mt-1">Exp: {{ formatAirdropDate(a.expirationDate) }}</div>
+                      </div>
+
+                      <!-- Airdrop project -->
+                      <div class="min-w-0 pl-12">
+                        <div class="flex items-center gap-3 min-w-0">
+                          <div class="h-9 w-9 rounded-full bg-gray-700/60 flex items-center justify-center overflow-hidden shrink-0">
+                            <img v-if="getAirdropIcon(a, 'project')" :src="getAirdropIcon(a, 'project')" alt="" class="h-full w-full object-cover" />
+                            <span v-else class="text-sm font-semibold text-gray-300">{{ (a.project?.symbol || a.project?.name || '?').slice(0,2) }}</span>
+                          </div>
+                          <div class="min-w-0">
+                            <div class="text-white font-medium leading-tight truncate">{{ a.project?.name || a.title || a.name }}</div>
+                            <div class="text-gray-400 text-[11px] leading-tight truncate">{{ a.subtitle || a.project?.subtitle || '' }}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Asset column -->
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-3 min-w-0">
+                          <div class="h-8 w-8 rounded-full bg-gray-700/60 flex items-center justify-center overflow-hidden shrink-0">
+                            <img v-if="getAirdropIcon(a, 'token')" :src="getAirdropIcon(a, 'token')" alt="" class="h-full w-full object-cover" />
+                            <span v-else class="text-xs font-semibold text-gray-300">{{ (a.token?.metadata?.symbol || a.asset || '?').slice(0,3) }}</span>
+                          </div>
+                          <div class="min-w-0">
+                            <div class="text-white font-medium truncate">{{ a.token?.metadata?.symbol || a.asset || a.token?.symbol }}</div>
+                            <div class="text-gray-400 text-[11px] truncate">{{ a.token?.metadata?.name || a.assetName || '' }}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Status -->
+                      <div class="text-center">
+                        <div :class="['inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold', a.status === 'eligible' ? 'bg-emerald-700/20 text-emerald-300 border border-emerald-700/30' : 'bg-gray-700/30 text-gray-200 border border-gray-700/50']">
+                          {{ capitalizeStatus(a.status) }}
+                        </div>
+                      </div>
+
+                      <!-- Amount -->
+                      <div class="text-right">
+                        <div class="text-white font-semibold text-lg">{{ formatTokenAmountFromAirdrop(a) }} {{ a.token?.metadata?.symbol || a.asset }}</div>
+                        <div class="text-gray-400 text-sm mt-1">{{ formatUSD(a.usdValue || a.estimatedUsd || a.valueUSD) }}</div>
+                      </div>
+
+                      <!-- Action column removed -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            
             </div>
          
           </div>
@@ -420,6 +490,8 @@ async function fetchSuiMarketPrice() {
 
 onMounted(() => {
   fetchSuiMarketPrice();
+  // also load demo airdrops
+  try { fetchAirdrops(); } catch (e) { /* silent */ }
   setInterval(fetchSuiMarketPrice, 60000); // refresh every 60s
 });
 import { UniversalConnector } from "@reown/appkit-universal-connector";
@@ -877,4 +949,129 @@ function prevPage() {
 function nextPage() {
   if (currentPage.value < totalPages.value) currentPage.value += 1;
 }
+
+// --- Airdrop Checker state & helpers ---
+const airdrops = ref<any[]>([]);
+const airdropLoading = ref(false);
+const airdropError = ref<string | null>(null);
+const AIRDROP_ENDPOINT = "https://suiport.mailberkayoztunc.workers.dev/api/airdrop-list";
+
+const totalAirdropsUSD = computed(() => {
+  return airdrops.value.reduce((sum, a) => {
+    const v = typeof a?.usdValue === 'number' ? a.usdValue : typeof a?.estimatedUsd === 'number' ? a.estimatedUsd : typeof a?.valueUSD === 'number' ? a.valueUSD : 0;
+    return sum + (isFinite(Number(v)) ? Number(v) : 0);
+  }, 0);
+});
+
+function formatUSDComma(n: number | null | undefined) {
+  if (typeof n !== 'number' || !isFinite(n)) return '$0,00';
+  return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(n);
+}
+
+function formatAirdropDate(d: any) {
+  try {
+    const dt = d ? new Date(d) : null;
+    if (!dt || Number.isNaN(dt.getTime())) return '-';
+    return dt.toLocaleDateString('nl-NL', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch {
+    return String(d || '-');
+  }
+}
+
+function capitalizeStatus(s: any) {
+  if (!s) return '-';
+  try {
+    const s2 = String(s);
+    return s2.charAt(0).toUpperCase() + s2.slice(1);
+  } catch {
+    return String(s);
+  }
+}
+
+function formatTokenAmountFromAirdrop(a: any) {
+  // prefer explicit eligibleAmount, otherwise token balance (humanized)
+  if (typeof a?.eligibleAmount === 'number') return formatTokenAmount(a.eligibleAmount);
+  if (typeof a?.amount === 'number') return formatTokenAmount(a.amount);
+  try {
+    const bal = a?.token?.balance ?? a?.balance ?? 0;
+    const dec = a?.token?.metadata?.decimals ?? 6;
+    const human = toHumanAmount(bal, dec);
+    return formatTokenAmount(human);
+  } catch {
+    return String(a?.eligibleAmount ?? a?.amount ?? '0');
+  }
+}
+
+async function fetchAirdrops() {
+  airdropLoading.value = true;
+  airdropError.value = null;
+  try {
+    const res = await fetch(AIRDROP_ENDPOINT, { method: 'GET' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    // support either { data: [...] } or direct array
+    const data = json?.data ?? json ?? [];
+    airdrops.value = Array.isArray(data) ? data : (Array.isArray(data?.airdrops) ? data.airdrops : []);
+    // compute usdValue for each airdrop when possible
+    airdrops.value = airdrops.value.map((a: any) => {
+      try {
+        const token = a?.token ?? {};
+        const price = typeof token?.priceUSD === 'number' ? token.priceUSD : typeof token?.metadata?.priceUSD === 'number' ? token.metadata.priceUSD : undefined;
+        const dec = typeof token?.metadata?.decimals === 'number' ? token.metadata.decimals : 0;
+        let humanAmount = undefined;
+        if (typeof a?.eligibleAmount === 'number') {
+          const raw = a.eligibleAmount;
+          // heuristic: if raw is larger than 10^decimals / 100 (i.e. likely raw minimal units), convert
+          const threshold = Math.pow(10, Math.min(dec, 6));
+          if (raw >= threshold && dec > 0) {
+            humanAmount = toHumanAmount(raw, dec);
+          } else {
+            humanAmount = raw; // assume it's already human
+          }
+        } else if (typeof a?.amount === 'number') {
+          const raw = a.amount;
+          const threshold = Math.pow(10, Math.min(dec, 6));
+          if (raw >= threshold && dec > 0) {
+            humanAmount = toHumanAmount(raw, dec);
+          } else {
+            humanAmount = raw;
+          }
+        }
+
+        const usd = typeof price === 'number' && typeof humanAmount === 'number' && isFinite(humanAmount) ? humanAmount * price : undefined;
+        return { ...a, usdValue: typeof usd === 'number' && isFinite(usd) ? usd : a.usdValue };
+      } catch (e) {
+        return a;
+      }
+    });
+  } catch (err: any) {
+    console.error('fetchAirdrops error', err);
+    airdropError.value = err?.message ?? 'Airdrop fetch failed';
+    airdrops.value = [];
+  } finally {
+    airdropLoading.value = false;
+  }
+}
+
+function getAirdropIcon(a: any, kind: 'project' | 'token') {
+  try {
+    // prefer explicit project icon for project kind
+    if (kind === 'project' && a?.project?.iconUrl) return a.project.iconUrl;
+    // prefer token metadata if present
+    if (kind === 'token' && a?.token?.metadata?.iconUrl) return a.token.metadata.iconUrl;
+    // fallback: if token coinType exists, try to find it in tokensEnriched
+    const ct = a?.token?.coinType || a?.token?.coin_type || null;
+    if (ct) {
+      const found = tokensEnriched.value.find((t: any) => String(t.coinType) === String(ct) || String(t.coinType).includes(String(ct)));
+      if (found && found.iconUrl) return found.iconUrl;
+    }
+    // lastly, fall back to project icon if available
+    if (a?.project?.iconUrl) return a.project.iconUrl;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// claimAirdrop removed (no action column) and airdrops are loaded on main onMounted
 </script>
